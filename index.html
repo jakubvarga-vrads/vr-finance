@@ -145,7 +145,7 @@ async function kde(v){
   const recent=open.filter(f=>f.vystavena>=new Date(Date.now()-120*864e5).toISOString().slice(0,10));
   const old=open.filter(f=>!recent.includes(f));
   const sumOpen=a=>a.reduce((s,f)=>s+ +f.suma_eur- +f.uhradene_eur,0);
-  const vyd=agg('vydavky'), costs={reklama:agg('reklama'),software:agg('software'),ludia:agg('ludia'),hotovost:agg('hotovost'),auto:agg('auto_cesty'),odvody:agg('odvody_dane'),ostatne:agg('ostatne')};
+  const vyd=agg('vydavky'), costs={reklama:agg('reklama'),software:agg('software'),ludia:agg('ludia'),auto:agg('auto_cesty'),odvody:agg('odvody_dane'),ostatne:agg('ostatne')};
   const rezerva=mrr-vyd;
   const runway=vyd>0?zSum/vyd:null;
   const fixne=pr.filter(p=>p.aktivny&&p.smer==='vydaj').reduce((a,p)=>a+(p.perioda==='rocne'?p.suma_eur/12:+p.suma_eur),0);
@@ -161,7 +161,7 @@ async function kde(v){
   <div class="split">
     <div class="card"><h2 style="margin-top:0">Kam idú peniaze (priemer za mesiac)</h2>
       ${Object.entries(costs).sort((a,b)=>b[1]-a[1]).map(([k,x])=>`<div class="kv"><span>${DL[k]||{auto:'Auto a cesty',odvody:'Odvody, dane, poplatky',ostatne:'Ostatné'}[k]}</span><span class="num">${eur(x)}</span></div><div class="bar" style="width:${vyd?Math.round(x/vyd*100):0}%;opacity:.8"></div>`).join('')}
-      <div class="note">Hotovosť = výbery z bankomatu (výplaty konateľov, kancelária, editori, Hexxa).</div>
+      <div class="note">Výbery z bankomatu sa do výdavkov nerátajú.</div>
     </div>
     <div class="card"><h2 style="margin-top:0">Paušály teraz</h2>
       ${pausaly.sort((a,b)=>b.pausal_eur-a.pausal_eur).map(k=>`<div class="kv"><span>${esc(k.nazov)} <span class="mut">${esc(k.firma||'')}</span></span><span class="num">${k.pausal_eur?eur(k.pausal_eur):'doplniť'}</span></div>`).join('')}
