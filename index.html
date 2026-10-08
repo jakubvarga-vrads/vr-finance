@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>V&R Financie</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--bg:#f6f7f5;--card:#fff;--ink:#16191d;--mut:#69707a;--line:#e3e6e2;--acc:#1f6f5c;--acc2:#e7f2ee;--red:#b4402e;--redbg:#fbecea;--amb:#a26a12;--ambbg:#fbf3e3;--ok:#1f6f5c;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#121513;--card:#1b1f1d;--ink:#e8ebe8;--mut:#9aa39e;--line:#2b312e;--acc:#5fc2a6;--acc2:#1d2f29;--red:#f08a77;--redbg:#3a1f1a;--amb:#e3b25a;--ambbg:#352a16;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,system-ui,sans-serif;padding-inline:16px}
+.wrap{max-width:1180px;margin:0 auto;padding-block:20px 60px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
+h1{font-size:20px;margin:0;letter-spacing:-.01em}
+h2{font-size:15px;margin:24px 0 10px}
+.mut{color:var(--mut)}
+.num{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;white-space:nowrap}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav button,.seg button{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:7px 12px;border-radius:8px;cursor:pointer;font:inherit}
+nav button.on,.seg button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.seg{display:flex;gap:4px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(3,1fr);margin-top:14px}@media(max-width:820px){.grid{grid-template-columns:1fr 1fr}}@media(max-width:480px){.grid{grid-template-columns:1fr}}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.tile .l{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+.tile .v{font-size:24px;font-weight:600;margin-top:4px}
+.tile .s{font-size:12px;color:var(--mut);margin-top:4px}
+.tile.warn{background:var(--ambbg)} .tile.bad{background:var(--redbg)} .tile.good{background:var(--acc2)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:12px}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:560px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:12px;color:var(--mut);font-weight:500;position:sticky;top:0;background:var(--card)}
+td.r,th.r{text-align:right}
+tr.sum td{font-weight:600}
+.pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;background:var(--line)}
+.pill.po_splatnosti{background:var(--redbg);color:var(--red)} .pill.caka{background:var(--ambbg);color:var(--amb)} .pill.zaplatena{background:var(--acc2);color:var(--acc)}
+.bar{height:8px;background:var(--acc);border-radius:4px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+select,input{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);max-width:100%}
+.btn{border:0;background:var(--acc);color:#fff;padding:9px 14px;border-radius:8px;cursor:pointer;font:inherit}
+.login{max-width:380px;margin:12vh auto;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px}
+.login input{width:100%;margin:10px 0}
+.note{font-size:12px;color:var(--mut);margin-top:8px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:12px} @media(max-width:820px){.split{grid-template-columns:1fr}}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)} .kv:last-child{border:0}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="login" class="login hide">
+    <h1>V&R Financie</h1>
+    <p class="mut">Prihlásenie len pre Jakuba a Honzu.</p>
+    <form id="loginForm">
+      <input id="email" type="email" placeholder="E-mail" autocomplete="username" required>
+      <input id="pass" type="password" placeholder="Heslo" autocomplete="current-password" required minlength="8">
+      <button class="btn" type="submit" style="width:100%">Prihlásiť</button>
+    </form>
+    <div class="row" style="justify-content:space-between;margin-top:12px;font-size:13px">
+      <a href="#" id="firstTime" style="color:var(--acc)">Prvé prihlásenie: vytvoriť heslo</a>
+      <a href="#" id="magic" style="color:var(--mut)">Poslať odkaz na e-mail</a>
+    </div>
+    <div id="loginMsg" class="note"></div>
+  </div>
+
+  <div id="app" class="hide">
+    <header>
+      <div><h1>V&R Financie</h1><div class="mut" id="asof"></div></div>
+      <div class="row">
+        <div class="seg" id="firmaSeg"><button data-f="" class="on">Obe firmy</button><button data-f="production">production</button><button data-f="ads">ads</button></div>
+        <button class="seg" style="border:0;background:none;color:var(--mut);cursor:pointer" id="logout">Odhlásiť</button>
+      </div>
+    </header>
+    <nav id="nav">
+      <button data-t="kde" class="on">Kde sme</button><button data-t="mesiace">Mesiace</button><button data-t="klienti">Klienti</button>
+      <button data-t="faktury">Faktúry</button><button data-t="pravidelne">Pravidelné</button>
+    </nav>
+    <main id="view"></main>
+  </div>
+</div>
+<script>
+const SB_URL='https://muorkurxhnhqtwmigclh.supabase.co', SB_KEY='sb_publishable_PJz8L_9YLJGs2UJPniusYA_ZSSMVTQB';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+const $=s=>document.querySelector(s);
+const eur=(v,d=0)=>v==null||isNaN(v)?'—':Number(v).toLocaleString('sk-SK',{minimumFractionDigits:d,maximumFractionDigits:d})+' €';
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const MES=['jan','feb','mar','apr','máj','jún','júl','aug','sep','okt','nov','dec'];
+const mlabel=m=>{const [y,mm]=m.split('-');return MES[+mm-1]+' '+y.slice(2)};
+const DRUHY=['trzby','reklama','software','ludia','hotovost','auto','cestovne','odvody','dane_poplatky','poistenie','telefon','vybavenie','najom','interny_prevod','refundacia','vklad_ine','nezaradene'];
+const DL={trzby:'Tržby',reklama:'Reklama',software:'Software',ludia:'Ľudia',hotovost:'Hotovosť (výplaty, kancelária)',auto:'Auto',cestovne:'Cestovné',odvody:'Odvody',dane_poplatky:'Dane a poplatky',poistenie:'Poistenie',telefon:'Telefón',vybavenie:'Vybavenie',najom:'Nájom',interny_prevod:'Interný prevod',refundacia:'Refundácia',vklad_ine:'Vklad / iné',nezaradene:'Nezaradené'};
+let firma='', tab='kde', cache={};
+
+async function q(name,build){const r=await (build?build(sb.from(name).select('*')):sb.from(name).select('*'));if(r.error){console.error(r.error);throw r.error}return r.data}
+const ff=rows=>firma?rows.filter(r=>r.firma===firma):rows;
+
+async function init(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){$('#login').classList.remove('hide');return}
+  $('#app').classList.remove('hide');
+  try{const a=await q('admini');if(!a.length)throw 0}catch(e){$('#view').innerHTML='<div class="card">Tento účet nemá prístup. Prihlás sa e-mailom Jakuba alebo Honzu.</div>';return}
+  render();
+}
+const ALLOWED=['jakubvarga.llc@gmail.com','info.richtr@gmail.com'];
+const msg=t=>$('#loginMsg').textContent=t;
+$('#loginForm').onsubmit=async e=>{e.preventDefault();msg('Prihlasujem…');
+  const {error}=await sb.auth.signInWithPassword({email:$('#email').value.trim(),password:$('#pass').value});
+  if(error){msg(error.message.includes('Email not confirmed')?'E-mail ešte nie je potvrdený. Klikni na odkaz v e-maile od Supabase a skús znova.':'Nesprávny e-mail alebo heslo.');return}
+  location.reload()};
+$('#firstTime').onclick=async e=>{e.preventDefault();const email=$('#email').value.trim().toLowerCase(),password=$('#pass').value;
+  if(!ALLOWED.includes(email)){msg('Tento e-mail nemá prístup.');return}
+  if(password.length<8){msg('Zadaj e-mail a nové heslo (aspoň 8 znakov), potom klikni sem.');return}
+  const {data,error}=await sb.auth.signUp({email,password,options:{emailRedirectTo:location.href.split('#')[0]}});
+  if(error){msg('Nepodarilo sa: '+error.message);return}
+  if(data.session){location.reload();return}
+  msg('Hotovo. Supabase ti poslal potvrdzovací e-mail, klikni na odkaz v ňom a potom sa prihlás heslom.')};
+$('#magic').onclick=async e=>{e.preventDefault();const email=$('#email').value.trim().toLowerCase();
+  if(!ALLOWED.includes(email)){msg('Zadaj svoj e-mail.');return}
+  const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:false,emailRedirectTo:location.href.split('#')[0]}});
+  msg(error?'Nepodarilo sa: '+error.message:'Odkaz je na ceste do e-mailu.')};
+$('#logout').onclick=async()=>{await sb.auth.signOut();location.reload()};
+$('#nav').onclick=e=>{const b=e.target.closest('button');if(!b)return;tab=b.dataset.t;[...$('#nav').children].forEach(x=>x.classList.toggle('on',x===b));render()};
+$('#firmaSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;firma=b.dataset.f;[...$('#firmaSeg').children].forEach(x=>x.classList.toggle('on',x===b));render()};
+sb.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_IN'&&!$('#login').classList.contains('hide'))location.reload()});
+
+async function render(){const v=$('#view');v.innerHTML='<p class="mut">Načítavam…</p>';
+  try{await ({kde,mesiace,klienti,faktury,pravidelne})[tab](v)}catch(e){v.innerHTML='<div class="card">Chyba: '+esc(e.message||e)+'</div>'}}
+
+/* ---------- Kde sme ---------- */
+async function kde(v){
+  const [akt]=await q('v_aktualne'); const zost=await q('zostatky');
+  const mes=ff(await q('v_mesiace')); const fa=ff(await q('v_faktury')); const kl=await q('klienti'); const pr=ff(await q('pravidelne'));
+  const lastZ={};zost.forEach(z=>{if(!lastZ[z.firma]||z.datum>lastZ[z.firma].datum)lastZ[z.firma]=z});
+  const zs=Object.values(lastZ).filter(z=>!firma||z.firma===firma); const zSum=zs.reduce((a,z)=>a+ +z.suma_eur,0);
+  const kDat=zs.map(z=>z.datum).sort().pop();
+  $('#asof').textContent='Banka k '+(kDat?new Date(kDat).toLocaleDateString('sk-SK'):'—')+' · faktúry aktuálne';
+  const months=[...new Set(mes.map(m=>m.mesiac))].filter(m=>m<= (kDat||'9999').slice(0,7)).sort().slice(-3);
+  const agg=k=>months.reduce((a,m)=>a+mes.filter(x=>x.mesiac===m).reduce((s,x)=>s+ +x[k],0),0)/Math.max(1,months.length);
+  const pausaly=kl.filter(k=>k.aktivny&&k.typ==='pausal'&&(!firma||k.firma===firma));
+  const mrr=pausaly.reduce((a,k)=>a+ +(k.pausal_eur||0),0);
+  const open=fa.filter(f=>f.stav==='caka'||f.stav==='po_splatnosti');
+  const recent=open.filter(f=>f.vystavena>=new Date(Date.now()-120*864e5).toISOString().slice(0,10));
+  const old=open.filter(f=>!recent.includes(f));
+  const sumOpen=a=>a.reduce((s,f)=>s+ +f.suma_eur- +f.uhradene_eur,0);
+  const vyd=agg('vydavky'), costs={reklama:agg('reklama'),software:agg('software'),ludia:agg('ludia'),hotovost:agg('hotovost'),auto:agg('auto_cesty'),odvody:agg('odvody_dane'),ostatne:agg('ostatne')};
+  const rezerva=mrr-vyd;
+  const runway=vyd>0?zSum/vyd:null;
+  const fixne=pr.filter(p=>p.aktivny&&p.smer==='vydaj').reduce((a,p)=>a+(p.perioda==='rocne'?p.suma_eur/12:+p.suma_eur),0);
+  v.innerHTML=`
+  <div class="grid">
+    <div class="tile"><div class="l">Na účtoch</div><div class="v num">${eur(zSum)}</div><div class="s">${zs.map(z=>z.firma+': '+eur(z.suma_eur)).join(' · ')}</div></div>
+    <div class="tile good"><div class="l">Istý mesačný príjem (paušály)</div><div class="v num">${eur(mrr)}</div><div class="s">${pausaly.length} aktívnych paušálov</div></div>
+    <div class="tile"><div class="l">Priemerné výdavky / mesiac</div><div class="v num">${eur(vyd)}</div><div class="s">priemer ${months.map(mlabel).join(', ')}</div></div>
+    <div class="tile ${rezerva>=0?'good':'bad'}"><div class="l">Paušály − výdavky</div><div class="v num">${eur(rezerva)}</div><div class="s">${rezerva>=0?'paušály pokryjú bežné výdavky':'bez jednorazoviek nevyjdeme'}</div></div>
+    <div class="tile ${sumOpen(recent)>0?'warn':''}"><div class="l">Čaká na úhradu (posl. 4 mes.)</div><div class="v num">${eur(sumOpen(recent))}</div><div class="s">${recent.length} faktúr · z toho po splatnosti ${eur(sumOpen(recent.filter(f=>f.stav==='po_splatnosti')))}</div></div>
+    <div class="tile"><div class="l">Peňazí na</div><div class="v num">${runway==null?'—':runway.toFixed(1)+' mes.'}</div><div class="s">ak by neprišla žiadna platba</div></div>
+  </div>
+  <div class="split">
+    <div class="card"><h2 style="margin-top:0">Kam idú peniaze (priemer za mesiac)</h2>
+      ${Object.entries(costs).sort((a,b)=>b[1]-a[1]).map(([k,x])=>`<div class="kv"><span>${DL[k]||{auto:'Auto a cesty',odvody:'Odvody, dane, poplatky',ostatne:'Ostatné'}[k]}</span><span class="num">${eur(x)}</span></div><div class="bar" style="width:${vyd?Math.round(x/vyd*100):0}%;opacity:.8"></div>`).join('')}
+      <div class="note">Hotovosť = výbery z bankomatu (výplaty konateľov, kancelária, editori, Hexxa).</div>
+    </div>
+    <div class="card"><h2 style="margin-top:0">Paušály teraz</h2>
+      ${pausaly.sort((a,b)=>b.pausal_eur-a.pausal_eur).map(k=>`<div class="kv"><span>${esc(k.nazov)} <span class="mut">${esc(k.firma||'')}</span></span><span class="num">${k.pausal_eur?eur(k.pausal_eur):'doplniť'}</span></div>`).join('')}
+      <div class="kv"><b>Spolu</b><b class="num">${eur(mrr)}</b></div>
+      <div class="note">Pravidelné fixné výdavky (software, kancelária, Hexxa): ${eur(fixne)} mesačne.</div>
+    </div>
+  </div>
+  <div class="card"><h2 style="margin-top:0">Čaká na úhradu</h2>${faTable(recent.sort((a,b)=>(a.splatnost||'').localeCompare(b.splatnost||'')))}
+   ${old.length?`<details style="margin-top:10px"><summary class="mut">Staršie neuhradené (${old.length}, ${eur(sumOpen(old))}) — overiť, časť mohla prísť mimo výpis alebo cez SWIFT</summary>${faTable(old)}</details>`:''}
+   <div class="note">Stav platieb je k poslednému nahranému výpisu (${kDat||'—'}). Platby po tomto dni sa ukážu po nahraní ďalšieho výpisu.</div></div>`;
+}
+function faTable(rows){return `<div class="tw"><table><tr><th>Klient</th><th>Faktúra</th><th>Vystavená</th><th>Splatná</th><th class="r">Suma</th><th>Stav</th></tr>${rows.map(f=>`<tr><td>${esc(f.klient||f.odberatel)}</td><td class="num">${esc(f.cislo)} <span class="mut">${f.firma}</span></td><td class="num">${f.vystavena||''}</td><td class="num">${f.splatnost||''}</td><td class="r num">${eur(f.suma_eur- (f.uhradene_eur||0),2)}</td><td><span class="pill ${f.stav}">${{po_splatnosti:'po splatnosti '+f.dni_po_splatnosti+' d',caka:'čaká',zaplatena:'zaplatená',dobropis:'dobropis'}[f.stav]}</span></td></tr>`).join('')}</table></div>`}
+
+/* ---------- Mesiace ---------- */
+async function mesiace(v){
+  const mes=ff(await q('v_mesiace'));const by={};
+  mes.forEach(m=>{const o=by[m.mesiac]??={};for(const k of ['fakturovane','prijmy','vydavky','reklama','software','ludia','hotovost','auto_cesty','odvody_dane','ostatne','cash_vysledok'])o[k]=(o[k]||0)+ +m[k]});
+  const ms=Object.keys(by).sort().filter(m=>m>='2025-10');
+  const mx=Math.max(...ms.map(m=>Math.max(by[m].prijmy,by[m].vydavky,by[m].fakturovane)),1);
+  const W=Math.max(560,ms.length*70),H=180;
+  const svg=`<svg viewBox="0 0 ${W} ${H+30}" width="${W}" height="${H+30}">${ms.map((m,i)=>{const x=i*(W/ms.length)+8,bw=(W/ms.length-16)/3,o=by[m];
+    const b=(val,j,c)=>`<rect x="${x+j*bw}" y="${H-val/mx*H}" width="${bw-2}" height="${val/mx*H}" fill="${c}" rx="2"><title>${mlabel(m)}: ${eur(val)}</title></rect>`;
+    return b(o.fakturovane,0,'var(--line)')+b(o.prijmy,1,'var(--acc)')+b(o.vydavky,2,'var(--red)')+`<text x="${x+bw*1.5}" y="${H+18}" font-size="11" text-anchor="middle" fill="var(--mut)">${mlabel(m)}</text>`}).join('')}</svg>`;
+  v.innerHTML=`<div class="card"><div class="row mut" style="font-size:12px"><span>▮ fakturované</span><span style="color:var(--acc)">▮ prišlo na účet</span><span style="color:var(--red)">▮ výdavky</span></div><div class="tw">${svg}</div></div>
+  <div class="card tw"><table><tr><th>Mesiac</th><th class="r">Fakturované</th><th class="r">Prišlo na účet</th><th class="r">Výdavky</th><th class="r">Výsledok</th></tr>
+  ${ms.slice().reverse().map(m=>{const o=by[m];return `<tr><td>${mlabel(m)}</td>${['fakturovane','prijmy','vydavky'].map(k=>`<td class="r num">${eur(o[k])}</td>`).join('')}<td class="r num" style="color:${o.cash_vysledok<0?'var(--red)':'var(--acc)'}">${eur(o.cash_vysledok)}</td></tr>`}).join('')}</table>
+  <div class="note">Prišlo a výdavky podľa bankových výpisov, bez presunov medzi účtami ads a production. Mesiac bez výpisu ukazuje len faktúry.</div></div>`;
+}
+
+/* ---------- Klienti ---------- */
+async function klienti(v){
+  const k=ff(await q('v_klienti_suhrn')).sort((a,b)=>(b.aktivny-a.aktivny)||(b.fakturovane_tento_rok-a.fakturovane_tento_rok));
+  v.innerHTML=`<div class="card tw"><table><tr><th>Klient</th><th>Typ</th><th class="r">Paušál</th><th>Aktívny</th><th class="r">Tento rok</th><th class="r">Spolu</th><th class="r">Faktúr</th><th>Posledná</th></tr>
+  ${k.map(c=>`<tr data-id="${c.id}"><td>${esc(c.nazov)}${c.poznamka?`<div class="note">${esc(c.poznamka)}</div>`:''}</td>
+   <td><select data-f="typ">${['pausal','jednorazovka','interne'].map(t=>`<option ${t===c.typ?'selected':''} value="${t}">${{pausal:'paušál',jednorazovka:'jednorazovka',interne:'interné'}[t]}</option>`).join('')}</select></td>
+   <td class="r"><input data-f="pausal_eur" type="number" step="10" style="width:90px" value="${c.pausal_eur??''}"></td>
+   <td><input data-f="aktivny" type="checkbox" ${c.aktivny?'checked':''}></td>
+   <td class="r num">${eur(c.fakturovane_tento_rok)}</td><td class="r num">${eur(c.fakturovane_spolu)}</td><td class="r num">${c.pocet_faktur}</td><td class="num">${c.posledna||''}</td></tr>`).join('')}</table>
+  <div class="note">Zmeny sa ukladajú hneď. Marža a výdelok na hodinu pribudnú so zápisom hodín (ďalšia fáza).</div></div>`;
+  v.querySelectorAll('[data-f]').forEach(el=>el.onchange=async()=>{const id=el.closest('tr').dataset.id;const f=el.dataset.f;
+    const val=f==='aktivny'?el.checked:f==='pausal_eur'?(el.value===''?null:+el.value):el.value;
+    const {error}=await sb.from('klienti').update({[f]:val}).eq('id',id);el.style.outline=error?'2px solid var(--red)':'2px solid var(--acc)';setTimeout(()=>el.style.outline='',900)});
+}
+
+/* ---------- Faktúry ---------- */
+async function faktury(v){
+  const fa=ff(await q('v_faktury',b=>b.order('vystavena',{ascending:false})));
+  v.innerHTML=`<div class="card"><div class="row"><select id="fs"><option value="">Všetky stavy</option><option value="po_splatnosti">Po splatnosti</option><option value="caka">Čaká</option><option value="zaplatena">Zaplatené</option></select><input id="fq" placeholder="Hľadať klienta…"></div><div id="ft"></div></div>`;
+  const draw=()=>{const s=$('#fs').value,t=$('#fq').value.toLowerCase();$('#ft').innerHTML=faTable(fa.filter(f=>(!s||f.stav===s)&&(!t||(f.klient||f.odberatel||'').toLowerCase().includes(t))))};
+  $('#fs').onchange=draw;$('#fq').oninput=draw;draw();
+}
+
+/* ---------- Pohyby ---------- */
+async function pohyby(v){
+  const p=ff(await q('v_pohyby',b=>b.order('datum',{ascending:false}).limit(2000)));
+  const kl=(await q('klienti')).sort((a,b)=>a.nazov.localeCompare(b.nazov));
+  const ms=[...new Set(p.map(x=>x.mesiac))].sort().reverse();
+  v.innerHTML=`<div class="card"><div class="row"><select id="pm"><option value="">Všetky mesiace</option>${ms.map(m=>`<option>${m}</option>`).join('')}</select>
+   <select id="pd"><option value="">Všetky druhy</option>${DRUHY.map(d=>`<option value="${d}">${DL[d]}</option>`).join('')}</select>
+   <label class="mut"><input type="checkbox" id="pn"> len príjmy bez faktúry</label><input id="pq" placeholder="Hľadať…"></div><div id="pt" class="tw"></div></div>`;
+  const opt=(sel)=>DRUHY.map(d=>`<option value="${d}" ${d===sel?'selected':''}>${DL[d]}</option>`).join('');
+  const kopt=(sel)=>'<option value="">—</option>'+kl.map(k=>`<option value="${k.id}" ${k.id===sel?'selected':''}>${esc(k.nazov)}</option>`).join('');
+  const draw=()=>{const m=$('#pm').value,d=$('#pd').value,n=$('#pn').checked,t=$('#pq').value.toLowerCase();
+    const rows=p.filter(x=>(!m||x.mesiac===m)&&(!d||x.druh===d)&&(!n||(x.suma_eur>0&&!x.faktura_id&&x.druh==='trzby'))&&(!t||((x.protistrana||'')+(x.popis||'')+(x.detail||'')+(x.klient||'')).toLowerCase().includes(t))).slice(0,500);
+    const sum=rows.filter(x=>x.smer==='prijem'||x.smer==='vydaj').reduce((a,x)=>a+ +x.suma_eur,0);
+    $('#pt').innerHTML=`<table><tr><th>Dátum</th><th>Protistrana</th><th class="r">Suma</th><th>Druh</th><th>Klient</th><th>Faktúra</th></tr>${rows.map(x=>`<tr data-id="${x.id}"><td class="num">${x.datum}<div class="mut" style="font-size:11px">${x.firma}${x.zdroj==='hotovost'?' · rozpis hotovosti':''}</div></td><td>${esc(x.protistrana||x.popis)}${x.detail?`<div class="note">${esc(x.detail)}</div>`:''}</td><td class="r num" style="color:${x.suma_eur>0?'var(--acc)':'inherit'}">${eur(x.suma_eur,2)}</td><td><select data-f="druh">${opt(x.druh)}</select></td><td><select data-f="klient_id" style="max-width:180px">${kopt(x.klient_id)}</select></td><td class="num">${x.faktura_cislo||''}</td></tr>`).join('')}<tr class="sum"><td colspan="2">Spolu (bez presunov)</td><td class="r num">${eur(sum,2)}</td><td colspan="3"></td></tr></table>`;
+    $('#pt').querySelectorAll('select[data-f]').forEach(el=>el.onchange=async()=>{const id=el.closest('tr').dataset.id;const f=el.dataset.f;const val=el.value||null;
+      const {error}=await sb.from('pohyby').update({[f]:val,potvrdene:true}).eq('id',id);const r=p.find(x=>x.id===id);if(!error&&r)r[f]=val;el.style.outline=error?'2px solid var(--red)':'2px solid var(--acc)';setTimeout(()=>el.style.outline='',900)})};
+  ['pm','pd','pn'].forEach(i=>$('#'+i).onchange=draw);$('#pq').oninput=draw;draw();
+}
+
+/* ---------- Pravidelné ---------- */
+async function pravidelne(v){
+  const pr=ff(await q('pravidelne')).filter(p=>p.aktivny&&p.smer==='vydaj');
+  const g={};pr.forEach(p=>{const k=p.druh==='software'?'Software a nástroje':p.nazov;g[k]=(g[k]||0)+(p.perioda==='rocne'?p.suma_eur/12:+p.suma_eur)});
+  const sum=Object.values(g).reduce((a,x)=>a+x,0);
+  v.innerHTML=`<div class="card"><h2 style="margin-top:0">Fixné výdavky mesačne</h2>${Object.entries(g).sort((a,b)=>b[1]-a[1]).map(([k,x])=>`<div class="kv"><span>${esc(k)}</span><span class="num">${eur(x)}</span></div>`).join('')}
+  <div class="kv"><b>Spolu</b><b class="num">${eur(sum)}</b></div><div class="note">Bez ľudí na faktúru a výplat konateľov, tie sú v hotovosti a v kategórii Ľudia.</div></div>`;
+}
+init();
+</script>
+</body>
+</html>
