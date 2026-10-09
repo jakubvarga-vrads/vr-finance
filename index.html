@@ -145,7 +145,8 @@ async function kde(v){
   const recent=open.filter(f=>f.vystavena>=new Date(Date.now()-120*864e5).toISOString().slice(0,10));
   const old=open.filter(f=>!recent.includes(f));
   const sumOpen=a=>a.reduce((s,f)=>s+ +f.suma_eur- +f.uhradene_eur,0);
-  const vyd=agg('vydavky'), costs={reklama:agg('reklama'),software:agg('software'),ludia:agg('ludia'),auto:agg('auto_cesty'),odvody:agg('odvody_dane'),ostatne:agg('ostatne')};
+  const vyd=agg('vydavky'), CK={reklama:'reklama',software:'software',ludia:'ludia',auto:'auto_cesty',odvody:'odvody_dane',ostatne:'ostatne'}, costs={}; for(const k in CK)costs[k]=agg(CK[k]);
+  const lm=months[months.length-1]; const lsum=k=>mes.filter(x=>x.mesiac===lm).reduce((s,x)=>s+ +x[k],0); const last={}; for(const k in CK)last[k]=lsum(CK[k]); const lastVyd=lsum('vydavky');
   const rezerva=mrr-vyd;
   const runway=vyd>0?zSum/vyd:null;
   const fixne=pr.filter(p=>p.aktivny&&p.smer==='vydaj').reduce((a,p)=>a+(p.perioda==='rocne'?p.suma_eur/12:+p.suma_eur),0);
@@ -153,15 +154,17 @@ async function kde(v){
   <div class="grid">
     <div class="tile"><div class="l">Na účtoch</div><div class="v num">${eur(zSum)}</div><div class="s">${zs.map(z=>z.firma+': '+eur(z.suma_eur)).join(' · ')}</div></div>
     <div class="tile good"><div class="l">Istý mesačný príjem (paušály)</div><div class="v num">${eur(mrr)}</div><div class="s">${pausaly.length} aktívnych paušálov</div></div>
-    <div class="tile"><div class="l">Priemerné výdavky / mesiac</div><div class="v num">${eur(vyd)}</div><div class="s">priemer ${months.map(mlabel).join(', ')}</div></div>
+    <div class="tile"><div class="l">Priemerné výdavky / mesiac</div><div class="v num">${eur(vyd)}</div><div class="s">priemer ${months.map(mlabel).join(', ')}${lm?' · '+mlabel(lm)+': '+eur(lastVyd):''}</div></div>
     <div class="tile ${rezerva>=0?'good':'bad'}"><div class="l">Paušály − výdavky</div><div class="v num">${eur(rezerva)}</div><div class="s">${rezerva>=0?'paušály pokryjú bežné výdavky':'bez jednorazoviek nevyjdeme'}</div></div>
     <div class="tile ${sumOpen(recent)>0?'warn':''}"><div class="l">Čaká na úhradu (posl. 4 mes.)</div><div class="v num">${eur(sumOpen(recent))}</div><div class="s">${recent.length} faktúr · z toho po splatnosti ${eur(sumOpen(recent.filter(f=>f.stav==='po_splatnosti')))}</div></div>
     <div class="tile"><div class="l">Peňazí na</div><div class="v num">${runway==null?'—':runway.toFixed(1)+' mes.'}</div><div class="s">ak by neprišla žiadna platba</div></div>
   </div>
   <div class="split">
-    <div class="card"><h2 style="margin-top:0">Kam idú peniaze (priemer za mesiac)</h2>
-      ${Object.entries(costs).sort((a,b)=>b[1]-a[1]).map(([k,x])=>`<div class="kv"><span>${DL[k]||{auto:'Auto a cesty',odvody:'Odvody, dane, poplatky',ostatne:'Ostatné'}[k]}</span><span class="num">${eur(x)}</span></div><div class="bar" style="width:${vyd?Math.round(x/vyd*100):0}%;opacity:.8"></div>`).join('')}
-      <div class="note">Výbery z bankomatu sa do výdavkov nerátajú.</div>
+    <div class="card"><h2 style="margin-top:0">Kam idú peniaze</h2>
+      <div class="kv mut" style="font-size:12px"><span></span><span style="display:flex;gap:16px"><span style="min-width:84px;text-align:right">priemer 3 mes.</span><span style="min-width:84px;text-align:right">${lm?mlabel(lm):''}</span></span></div>
+      ${Object.entries(costs).sort((a,b)=>b[1]-a[1]).map(([k,x])=>`<div class="kv"><span>${DL[k]||{auto:'Auto a cesty',odvody:'Odvody, dane, poplatky',ostatne:'Ostatné'}[k]}</span><span style="display:flex;gap:16px"><span class="num" style="min-width:84px;text-align:right">${eur(x)}</span><span class="num" style="min-width:84px;text-align:right">${eur(last[k])}</span></span></div><div class="bar" style="width:${vyd?Math.round(x/vyd*100):0}%;opacity:.8"></div>`).join('')}
+      <div class="kv"><b>Spolu</b><span style="display:flex;gap:16px"><b class="num" style="min-width:84px;text-align:right">${eur(vyd)}</b><b class="num" style="min-width:84px;text-align:right">${eur(lastVyd)}</b></span></div>
+      <div class="note">Podľa bankových výpisov. Výbery z bankomatu sa do výdavkov nerátajú.</div>
     </div>
     <div class="card"><h2 style="margin-top:0">Paušály teraz</h2>
       ${pausaly.sort((a,b)=>b.pausal_eur-a.pausal_eur).map(k=>`<div class="kv"><span>${esc(k.nazov)} <span class="mut">${esc(k.firma||'')}</span></span><span class="num">${k.pausal_eur?eur(k.pausal_eur):'doplniť'}</span></div>`).join('')}
@@ -236,10 +239,20 @@ async function pohyby(v){
 /* ---------- Pravidelné ---------- */
 async function pravidelne(v){
   const pr=ff(await q('pravidelne')).filter(p=>p.aktivny&&p.smer==='vydaj');
-  const g={};pr.forEach(p=>{const k=p.druh==='software'?'Software a nástroje':p.nazov;g[k]=(g[k]||0)+(p.perioda==='rocne'?p.suma_eur/12:+p.suma_eur)});
-  const sum=Object.values(g).reduce((a,x)=>a+x,0);
-  v.innerHTML=`<div class="card"><h2 style="margin-top:0">Fixné výdavky mesačne</h2>${Object.entries(g).sort((a,b)=>b[1]-a[1]).map(([k,x])=>`<div class="kv"><span>${esc(k)}</span><span class="num">${eur(x)}</span></div>`).join('')}
-  <div class="kv"><b>Spolu</b><b class="num">${eur(sum)}</b></div><div class="note">Bez ľudí na faktúru a výplat konateľov, tie sú v hotovosti a v kategórii Ľudia.</div></div>`;
+  const mz=p=>p.perioda==='rocne'?p.suma_eur/12:+p.suma_eur;
+  const sw=pr.filter(p=>p.druh==='software').sort((a,b)=>mz(b)-mz(a)), ine=pr.filter(p=>p.druh!=='software').sort((a,b)=>mz(b)-mz(a));
+  const sum=a=>a.reduce((s,p)=>s+mz(p),0);
+  const row=p=>`<tr><td>${esc(p.nazov)}${p.poznamka?`<div class="note">${esc(p.poznamka)}</div>`:''}</td><td class="mut">${p.firma||''}</td><td class="num r">${p.den?p.den+'.':''}</td><td class="num r">${+p.suma_eur?eur(mz(p),2):'doplniť'}${p.perioda==='rocne'?'<div class="note">'+eur(p.suma_eur,2)+' / rok</div>':''}</td></tr>`;
+  v.innerHTML=`<div class="split">
+  <div class="card"><h2 style="margin-top:0">Fixné výdavky mesačne</h2>
+    <div class="kv"><span>Predplatné a nástroje (${sw.length})</span><span class="num">${eur(sum(sw))}</span></div>
+    ${ine.map(p=>`<div class="kv"><span>${esc(p.nazov)}</span><span class="num">${eur(mz(p))}</span></div>`).join('')}
+    <div class="kv"><b>Spolu</b><b class="num">${eur(sum(pr))}</b></div>
+    <div class="note">Kancelária a Hexxa sa platia v hotovosti. Bez ľudí na faktúru a výplat konateľov.</div></div>
+  <div class="card" style="overflow-x:auto"><h2 style="margin-top:0">Predplatné</h2>
+    <table><tr><th>Služba</th><th>Karta</th><th class="r">Deň</th><th class="r">Mesačne</th></tr>${sw.map(row).join('')}
+    <tr class="sum"><td colspan="3">Spolu</td><td class="r num">${eur(sum(sw),2)}</td></tr></table>
+    <div class="note">Sumy podľa posledných platieb vo výpisoch (zahraničné meny prepočítané bankou).</div></div></div>`;
 }
 init();
 </script>
